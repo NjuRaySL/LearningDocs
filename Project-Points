@@ -1,0 +1,202 @@
+# 工具
+
+## Redis集成（重！）
+
+### 用户活跃排行榜
+
+**是基于redis的zset数据结构来实现**
+
+**业务：有活跃度计算方式：浏览，点赞，收藏，发布，展示活跃度最高的前30个用户**：**userid、rank、score**
+
+
+
+## Knife4j+Swagger
+
+### 介绍
+
+整合 Knife4j 替换丑陋的 Swagger 实现 API 文档生成和 RESTful  Web 测试
+
+Swagger 是⼀套完整的⽤于⽣成、 描述和调⽤ RESTful 接⼝的 Web 服务。
+
+它提供了很多组件：
+
+- Swagger Editor：⼀个在线编辑器，⽤于编写和验 证 OpenAPI 规范
+- Swagger UI：⼀个可视化⼯具，⽤于显示⽣成的  API ⽂档
+- Swagger Codegen：⼀个代码⽣成器，⽤于⽣成服 务器端和客户端代码。
+
+**说得直⽩点就是，Swagger 可以将项⽬中想要暴露的接 ⼝展示在⻚⾯上，这样，我们就可以直接进⾏接⼝调⽤ 和测试，能在很⼤程度上提升开发的效率。**
+
+### 使用
+
+**可以不创建 Java 配置类，通过在  application.yml ⽂件中设置属性来达到相同的⽬的。**
+
+**只需要在配置⽂件中配置 knife4j.enable=true 即 可。**
+
+**运⾏项⽬，然后在浏览器地址栏输⼊  http://localhost:8080/doc.html 就可以看到 API ⽂档 了**
+
+## AOP切面编程日志（重）
+
+### 介绍
+
+AOP 涉及到的 5 个关键术语：
+
+1）横切关注点，从每个⽅法中抽取出来的同⼀类⾮核⼼业务
+
+2）切⾯（Aspect），对横切关注点进⾏封装的类，每个 关注点体现为⼀个通知⽅法；通常使⽤ @Aspect 注解 来定义切⾯。
+
+3）通知（Advice），切⾯必须要完成的各个具体⼯作， ⽐如我们的⽇志切⾯需要记录接⼝调⽤前后的时⻓，就需要在调⽤接⼝前后记录时间，再取差值。通知的⽅式有五 种： 
+
+- @Before：通知⽅法会在⽬标⽅法调⽤之前执⾏ 
+- @After：通知⽅法会在⽬标⽅法调⽤后执⾏ 
+- @AfterReturning：通知⽅法会在⽬标⽅法返回后执⾏ 
+- @AfterThrowing：通知⽅法会在⽬标⽅法抛出异常后执⾏ 
+- @Around：把整个⽬标⽅法包裹起来，在被调⽤前和调⽤之后分别执⾏通知⽅法
+
+4）连接点（JoinPoint），通知应⽤的时机，⽐如接⼝⽅法被调⽤时就是⽇志切⾯的连接点。
+
+5）切点（Pointcut），通知功能被应⽤的范围，⽐如本 篇⽇志切⾯的应⽤范围是所有 controller 的接⼝。通常 使⽤ @Pointcut 注解来定义切点表达式。
+
+### 使用
+
+技术派中的 AOP 记录接⼝访问⽇志是放在 paicoding-core 模块下的 mdc 包下
+
+1、生成traceId
+
+- 为什么需要 traceid 呢：分布式或者微服务系统的多服务需要统一标识符
+
+2、MdcAspect 切⾯的⽬的是处理添加了@MdcDot注解的⽅法或类。具体如何处理，由@Around注解标注的 handle⽅法定义。
+
+## Mybatis-Plus（重）
+
+### 介绍
+
+MyBatis-Plus 是 MyBatis 的 ⼀个增强
+
+提供了⼀些额外的功能，**⽐如说条件构造器、 分⻚插件、代码⽣成器等等**
+
+**以便我们能更专注于业务逻辑，⽽不是 SQL 语句的编写。**
+
+### 基本使用
+
+#### Service CRUD
+
+- tagDao 是我们定义的数据访问对象（Data Access  Object，简称 DAO），**它继承⾃ MyBatis-Plus 提供 的 ServiceImpl 类。** 
+- **@Autowired 注解将 TagDao  ⾃动注⼊到当前类中。**
+
+- 通过继承 ServiceImpl 类，TagDao 就可以使⽤  MyBatis-Plus 提供的通⽤ CRUD ⽅法，如 save、 getById、updateById 等。这些⽅法已经实现了基本的 数据库操作，通常⽆需⾃⼰编写 SQL 语句。
+
+#### Mapper CRUD
+
+特殊的增删改查是通过 MyBatis-Plus 的  Mapper CRUD来实现的。
+
+#### MyBatis-Plus 查询方法
+
+articleDetailMapper 是我们在当前类中注⼊的⼀个  Mapper 接⼝
+
+- **根据ID查询：articleDetailMapper.selectById**
+- **批量查询ID：selectBatchIds**
+- **根据键值对查询：selectByMap**
+
+#### 条件构造器
+
+Wrapper 是⼀个条件构造器，能够**以链式编程的方式编写查询条件，不需要⼿动编写 SQL 语句。**
+
+#### MyBatis-Plus 自定义SQL
+
+可以在  Mapper 接⼝中编写⾃定义 SQL ⽅法，并使⽤注解添加 ⾃定义的 SQL 语句
+
+~~~java
+@Select("select * from user where third_account_id = #{account_id} limit 1")
+UserDO getByThirdAccountId(@Param("account_id") String accountId);
+~~~
+
+#### MyBatis-Plus 更新和删除
+
+#### MyBatis-Plus 主键策略
+
+自增主键，在MyBatis-Plus提供的基类BaseDO中可以修改主键类型：无主键、UUID、雪花算法
+
+# 架构
+
+## 多配置文件
+
+配置相关信 息都是放在 application.yml 配置⽂件中的
+
+- 但是 技术派不⼀样，它除了这个配置⽂件之外，还有好⼏个其他的配置⽂件
+- 如 application-dal.yml 、 appli cation-image.yml ， application-web.yml
+
+**有⼀个功能，就是利⽤它来做环境区分**
+
+**常见的⼀种⽅式是通过启动脚本，传⼊当前环境的参数，来覆盖选中的环境**
+
+# 重难点
+
+## 请求参数解析
+
+### GET请求
+
+**如果⼀个请求不会导致服务器上任何资源的状态变化，那你就可以使⽤GET请求**
+
+~~~java
+@GetMapping(path = {"/", "", "/index", "/login"})
+public String index(Model model, HttpServletRequest request) {
+    String activeTab = request.getParameter("category");
+    IndexVo vo = indexRecommendHelper.buildIndexVo(activeTab);
+    model.addAttribute("vo", vo);
+    return "views/home/index";
+}
+~~~
+
+- **@RequestParam** 是 Spring  MVC 框架中的⼀个注解，⽤于从请求中获取参数。**它将请求参数绑定到你的控制器⽅法的参数上。** 
+
+- **@PathVariable** 是 Spring MVC 中的⼀个注解，可以**将 URL 中的占位符参数绑定到控制器处理⽅法的参数上。** 
+
+~~~java
+@GetMapping("detail/{articleId}")
+public String detail(@PathVariable(name = "articleId") Long articleId, Model model) throws IOException {
+~~~
+
+### POST 请求
+
+POST 请求主要⽤于提交数据到服务器端。尤其是表单提交、⽂件上传等场景。
+
+~~~java
+@PostMapping(path = "testPost")
+public String testPost(HttpServletRequest request) {
+    String name = request.getParameter("name");
+    String age = request.getParameter("age");
+    return "name=" + name + ", age=" + age;
+}
+~~~
+
+- **HttpServletRequest.getParameter ⽅法获取  name 和 age 参数。**
+
+- 想要**读取JSON格式数据就要读取整个请求体**：
+
+~~~java
+// POST 请求，使用 HttpServletRequest 获取 JSON 请求参数
+@PostMapping(path = "testPostJson2")
+public String testPostJson2(HttpServletRequest request) {
+    StringBuilder sb = new StringBuilder();
+    try (BufferedReader reader = request.getReader()) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+
+    return sb.toString();  // body中即是JSON格式的请求参数
+}
+~~~
+
+- **当处理 HTTP 请求 时，我们只能读取请求 body ⼀次，然后数据就会被清 除**
+
+### @RequestBody
+
+**@RequestBody 注解⽤于将请求体绑定到⼀个⽅法参数 上。通常⽤于处理 POST、PUT 等⽅法的请求，这些请求通常会在请求体中发送数据。**
+
+- 在⽅法参数上添加 @RequestBody 注解，Spring 会使⽤⼀个  HttpMessageConverter **将请求体转换为对应的 Java 对象。** 
+
+# 
