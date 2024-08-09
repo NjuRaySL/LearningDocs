@@ -556,3 +556,806 @@ Git 提供了一个跳过使用暂存区域的方式， 只要在提交的时候
 
 ### YANG学习
 
+### 资源侧
+
+#### 注册DYN类
+
+`src/bfd/interface/model/im/id/bfd_pub_dyn_cid.txt` 
+
+~~~c
+CLASS {"DynMiniGroup", SUBSYS_ID_BFD, 0x09102227}
+CLASS {"DynMiniPort", SUBSYS_ID_BFD, 0x09102228}
+~~~
+
+`src/bfd/model/im/bfd/BFD_mim.xml`
+
+~~~xml
+<dynamicClass declareType="Public" name="DynMiniGroup">
+    <subNode>
+        <field length="4" key="True" datatype="VRID" name="vrId"/>
+        <field length="4" key="True" minimum="1" maximum="256" datatype="UINT32" name="groupId"/>
+        <field length="4" key="False" datatype="UCHAR" name="groupState"/>
+        <field length="7" key="False" datatype="DATETIME" name="groupCreateTime"/>
+    </subNode>
+</dynamicClass>
+<dynamicClass declareType="Public" name="DynMiniPort">
+    <subNode>
+        <field length="4" key="True" datatype="VRID" name="vrId"/>
+        <field length="4" key="True" minimum="1" maximum="256" datatype="UINT32" name="groupId"/>
+        <field length="4" key="True" minimum="0" maximum="4294967295" datatype="IFID2IFNAME" name="ifIndex"/>
+        <field length="4" key="False" datatype="UCHAR" name="ifState"/>
+        <field length="7" key="False" datatype="DATETIME" name="ifCreateTime"/>
+    </subNode>
+</dynamicClass>
+~~~
+
+#### 注册DAM类
+
+`src/bfd/interface/model/im/id/bfd_pub_dam_cid.txt`
+
+~~~c
+CLASS {"DAMMiniGroup", SUBSYS_ID_BFD, 0x1910b67a}
+CLASS {"DAMMiniPort", SUBSYS_ID_BFD, 0x1910b68a}
+~~~
+
+`src/bfd/model/im/bfd/BFD_mim.xml`
+
+~~~xml
+<damview class="BFD::MiniTaskGroup" declareType="Public" type="ALL" name="DAMMiniGroup">
+    <field element="vrId"/>
+    <field element="groupId"/>
+</damview>
+<damview class="BFD::MiniTaskPort" declareType="Public" type="ALL" name="DAMMiniPort">
+    <field element="vrId"/>
+    <field element="groupId"/>
+    <field element="ifIndex"/>
+    <field element="ifPriority"/>
+</damview>
+~~~
+
+#### 注册DOM类
+
+`src/bfd/model/om/interface/sys/bfd_inner_complex_cid.txt`
+
+~~~c
+CLASS {"MiniTaskOMDisp", SUBSYS_ID_BFDOM, 0x096c404a}
+~~~
+
+`src/bfd/model/om/bfdom/BFDOM_mim.xml`
+
+~~~xml
+<paraTable name="MiniTaskOMDisp">
+    <para length="4" datatype="VRID" name="vrId"/>
+    <para length="4" datatype="UINT32" mininum="0" maxinum="256" name="groupId"/>
+    <operations/>
+</paraTable>
+~~~
+
+#### 添加显示模板
+
+添加显示模板`src/bfd/model/om/bfdom/BFDOM_cmd.xml`
+
+~~~xml
+        <display id="0x096c0309" name="MiniTaskGroupDisp" MacroPrefix="BFD" if-feature="SPEC_FUNC_BFD">
+            <General>
+<![CDATA[<p>
+Minitask group $DynMiniGroup.groupId information:
+<equal para1="$DynMiniGroup.groupState" para2="1">
+Group $DynMiniGroup.groupId status : Active
+</equal>
+<noequal para1="$DynMiniGroup.groupState" para2="1">
+Group $DynMiniGroup.groupId status : Inactive
+</noequal>
+Create Time : 2022/05/20 00:00:00
+</p>
+Member           State       CreateTime
+------------------------------------------------------------------------
+]]> 
+            </General>
+            <Local><![CDATA[]]></Local>
+            <Anchors/>
+        </display>
+        <display id="0x096c0310" name="MiniTaskPortDisp" MacroPrefix="BFD" if-feature="SPEC_FUNC_BFD">
+            <General>
+<![CDATA[vwidth("v2name($DynMiniPort.ifIndex)",25,left)vwidth("v2s($DynMiniPort.ifState)",11,left)vwidth("val($DynMiniPort.ifCreateTime,12)",40,left)
+]]>
+            </General>
+            <Local><![CDATA[]]></Local>
+            <Anchors/>
+        </display>
+~~~
+
+添加值替换规则`src/bfd/model/om/bfdom/BFDOM_cmd.xml`
+
+~~~xml
+<Rule name="ifState">
+    <Class name="DynMiniPort"/>
+    <Element name="ifState"/>
+    <DataType elementType="UCHAR"/>
+    <MinValue value="0"/>
+    <MaxValue value="255"/>
+    <AllValue>
+        <VToS general="down" local="down" value="0"/>
+        <VToS general="up" local="up" value="1"/>
+    </AllValue>
+</Rule>
+~~~
+
+#### 命令行建模
+
+命令行建模`src/bfd/model/om/bfdom/BFDOM_cmd.xml`
+
+~~~xml
+<CmdInfo Name="MiniTask-Disp" class="MiniTaskOMDisp" Template="cli_8f" if-feature="SPEC_FUNC_BFD">
+    <elements>
+        <Element name="display">
+            <Name value="display"/>
+            <ElementType value="CommandKey"/>
+            <RelativeClass value="MiniTaskOMDisp"/>
+            <KeyWithValue value="False"/>
+            <AutoCompelete value="True"/>
+        </Element>
+        <Element name="minitask">
+            <Name value="minitask"/>
+            <ElementType value="CommandKey"/>
+            <RelativeClass value="MiniTaskOMDisp"/>
+            <KeyWithValue value="False"/>
+            <AutoCompelete value="True"/>
+        </Element>
+        <Element name="group">
+            <Name value="group"/>
+            <ElementType value="CommandKey"/>
+            <RelativeClass value="MiniTaskOMDisp"/>
+            <KeyWithValue value="False"/>
+            <AutoCompelete value="True"/>
+        </Element>
+        <Element name="groupId">
+            <Name value="groupId"/>
+            <ElementType value="CommandParameter"/>
+            <DataType value="UINT32"/>
+            <RelativeClass value="MiniTaskOMDisp"/>
+            <RelativeElement value="groupId"/>
+            <MinValue value="1"/>
+            <Maxvalue value="256"/>
+            <AutoCompelete value="True"/>
+        </Element>
+        <Element name="all">
+            <Name value="all"/>
+            <ElementType value="CommandKey"/>
+            <RelativeClass value="MiniTaskOMDisp"/>
+            <RelativeElement value="groupId"/>
+            <KeyWithValue value="True"/>
+            <FieldValue value="0"/>
+            <AutoCompelete value="True"/>
+        </Element>
+    </elements>
+    <extendElements>
+        <extendElement>
+            <Name value="vrId"/>
+            <Type value="CLI_EXTEND_USERINFO"/>
+            <RelativeClass value="MiniTaskOMDisp"/>
+            <RelativeElement value="vrId"/>
+            <ParaNo value="0"/>
+            <UserInfo value="$vrId"/>
+        </extendElement>
+    </extendElements>
+    <expressions>
+        <Cmd>
+            <Name value="DisplayMiniTask"/>
+            <Expression value="$1 $2 $3 { $4 | $5 }"/>
+            <IsSystemCmd value="False"/>
+            <CmdWord value="QUERY_DATA"/>
+            <OperationCode value="GET"/>
+            <AccessRange value="r"/>
+            <Task value="bfd" id="0x09100011"/>
+            <ExtendElements value="vrId"/>
+            <ViewSwitchType value="COMMON_COMMAND">
+                <EnvVariable/>
+            </ViewSwitchType>
+            <Timeout value="0"/>
+            <DeployType value="Master"/>
+            <LongTime value="False"/>
+            <ActiveConfig value="Release"/>
+        </Cmd>
+    </expressions>
+</CmdInfo>
+~~~
+
+命令行装配`src/bfd/model/om/bfdom/feature_assemble/BFDOM_feature_cmd_assem.xml`
+
+~~~xml
+<CmdInfo Name="MiniTask-Disp" Template="cli_8f" if-feature="SPEC_FUNC_BFD">
+<elements>
+    <Element Name="display" no="$1" type="CommandKey"/>
+    <Element Name="minitask" no="$2" type="CommandKey"/>
+    <Element Name="group" no="$3" type="CommandKey"/>
+    <Element Name="groupId" no="$4" type="CommandParameter" basetype="UINT32" range="1-256"/>
+    <Element Name="all" no="$5" type="CommandKey"/>
+</elements>
+<expressions>
+    <Cmd name="DisplayMiniTask" clue="$1 $2 $3 { $4 | $5 }">
+    <expression><![CDATA[display minitask group { <groupid> | all}]]></expression>
+    </Cmd>
+</expressions>
+</CmdInfo>
+~~~
+
+#### LUA脚本
+
+`src/bfd/model/om/bfdom/MiniTaskOMDisp.lua`
+
+~~~lua
+module("MiniTaskOMDisp", package.seeall)
+ 
+require("vrp_msg")
+require("ifmcomm_bas_pub")
+
+function script_query(msg, data)
+    local result, _, vrId = spt_GetLrVrId();
+    if (result ~= OK) or (vrId == nil) then
+        return OK;
+    end
+
+    -- 获取下发的参数
+    local input = spt_GetMsgFieldValue()
+
+    -- 配置查询条件
+    local groupCondition = {}
+
+    if input.groupId ~= nil then
+        spt_AddField(groupCondition, _fid_DynMiniGroup.groupId, input.groupId)
+    else
+        spt_AddField(groupCondition, _fid_DynMiniGroup.groupId, 0)
+    end    
+ 
+    local groupHandle
+    result, groupHandle = spt_Query(_cid_DynMiniGroup, groupCondition, false)
+
+    if (result ~= OK) or (groupHandle == nil) then
+        spt_OutCtrl(0, 0, "Get Handle Error\n", 0)
+        return OK
+    end
+    while true do
+        local groupRecord
+        -- 获取group记录
+        result, groupRecord = spt_GetNextRecord(groupHandle)
+
+        if (result ~= OK) or (groupRecord == nil) then
+            break
+        end
+
+        -- 输出group模板
+        spt_OutCtrl(BFD_DSPL_MINITASKGROUPDISP, _cid_DynMiniGroup, {groupRecord}, 0)
+        
+        local groupId = groupRecord[_fid_DynMiniGroup.groupId].value
+
+        -- 配置接口查询条件
+        local portCondition = {}
+        spt_AddField(portCondition, _fid_DynMiniPort.groupId, groupId)
+        
+        local portHandle
+        result, portHandle = spt_Query(_cid_DynMiniPort, portCondition, false)
+
+        if (result ~= OK) or (portHandle == nil) then
+            spt_OutCtrl(0, 0, "get handle error\n", 0)
+            return OK
+        end
+
+        while true do
+            -- 获取port记录
+            local portRecord
+            result, portRecord = spt_GetNextRecord(portHandle)
+ 
+            if (result ~= OK) or (portRecord == nil) then
+                break
+            end
+
+        -- 输出port模板
+            spt_OutCtrl(BFD_DSPL_MINITASKPORTDISP, _cid_DynMiniPort, {portRecord}, 0)
+        end
+        spt_EndQuery(portHandle)
+    end
+    spt_EndQuery(groupHandle)
+
+    return OK
+end
+~~~
+
+#### 关联组件
+
+`src/bfd/model/im/bfd/BFD_mim.xml`
+
+<subscriptionModel>
+
+ <refView>标签下添加
+
+~~~xml
+<directSubView pidType="byOperationDeploy" PidTable="DeployByLRPid" name="BFD::DAMMiniGroup" refDamview="BFD::DAMMiniGroup" paraClass1="BFD::MiniTaskGroup" para1="SysEnvTable::LRID" isDirectSubViewOfPmPath="FALSE" isStaticDamview="FALSE"/>
+<directSubView pidType="byOperationDeploy" PidTable="DeployByLRPid" name="BFD::DAMMiniPort" refDamview="BFD::DAMMiniPort" paraClass1="BFD::MiniTaskPort" para1="SysEnvTable::LRID" isDirectSubViewOfPmPath="FALSE" isStaticDamview="FALSE"/>
+~~~
+
+ <refDyn>标签下添加
+
+~~~xml
+<componentRef PidTable="DeployByLRPid" class="DynMiniGroup" para1="SysEnvTable::LRID"/>
+<componentRef PidTable="DeployByLRPid" class="DynMiniPort" para1="SysEnvTable::LRID"/>
+~~~
+
+### 组件侧
+
+#### 注册DYN类
+
+`src/bfd/interface/mim/bfd_mim_dynclass_pub.h`
+
+~~~C
+#define CLASSID_DIMDYN_DYNMINIGROUP 0x09102227
+#define CLASSID_DIMDYN_DYNMINIPORT 0x09102228
+
+...
+
+#define MAX_BFD_DYNMINIGROUP_FID_NUM 4
+#define FID_BFD_DYNMINIGROUP_VRID 0x0001
+#define FID_BFD_DYNMINIGROUP_GROUPID 0x0002
+#define FID_BFD_DYNMINIGROUP_GROUPSTATE 0x0003
+#define FID_BFD_DYNMINIGROUP_GROUPCREATETIME 0x0004
+typedef struct tagCLASS_BFD_DYNMINIGROUP_S {
+    VRID vrId;
+    UINT32 groupId;
+    UINT32 groupState;
+    DATETIME groupCreateTime;
+} CLASS_BFD_DYNMINIGROUP_S;
+
+#define MAX_BFD_DYNMINIPORT_FID_NUM 5
+#define FID_BFD_DYNMINIPORT_VRID 0x0001
+#define FID_BFD_DYNMINIPORT_GROUPID 0x0002
+#define FID_BFD_DYNMINIPORT_IFINDEX 0x0003
+#define FID_BFD_DYNMINIPORT_IFSTATE 0x0004
+#define FID_BFD_DYNMINIPORT_IFCREATETIME 0x0005
+typedef struct tagCLASS_BFD_DYNMINIPORT_S {
+    VRID vrId;
+    UINT32 groupId;
+    UINT32 ifIndex;
+    UCHAR ifState;
+    DATETIME ifCreateTime;
+} CLASS_BFD_DYNMINIPORT_S;
+~~~
+
+#### 注册DAM类
+
+`src/bfd/interface/mim/bfd_mim_damclass_pub.h`
+
+~~~c
+#define CLASSID_DAMVIEW_DAMMINIGROUP 0x1910b67a
+#define CLASSID_DAMVIEW_DAMMINIPORT 0x1910b68a
+
+...
+
+#define MAX_BFD_DAMMINIGROUP_FID_NUM 2               /* fields number */
+#define FID_BFD_DAMMINIGROUP_VRID 0x0001             /* vrId */
+#define FID_BFD_DAMMINIGROUP_GROUPID 0x0002          /* id */
+typedef struct tagCLASS_BFD_DAMMINIGROUP_S {
+    VRID vrId;       /* VR ID */
+    UINT32 groupId;    /* groupId */
+} CLASS_BFD_DAMMINIGROUP_S;
+ 
+#define MAX_BFD_DAMMINIPORT_FID_NUM 4               /* fields number */
+#define FID_BFD_DAMMINIPORT_VRID 0x0001             /* vrId */
+#define FID_BFD_DAMMINIPORT_GROUPID 0x0002          /* id */
+#define FID_BFD_DAMMINIPORT_IFINDEX 0x0003          /* ӿ */
+#define FID_BFD_DAMMINIPORT_IFPRIORITY 0x0004          /* ӿ */
+typedef struct tagCLASS_BFD_DAMMINIPORT_S {
+    VRID vrId;          /* VR ID */
+    UINT32 groupId;     /* groupId */
+    UINT32 ifIndex;     /* ifIndex */
+    UCHAR ifPriority;  /* ifPriority */
+} CLASS_BFD_DAMMINIPORT_S;
+~~~
+
+#### 注册显示模板
+
+`src/bfd/src/include/mim/bfdom_ml.h`
+
+~~~c
+#define BFD_DSPL_MINITASKGROUPDISP 0x096c0309
+#define BFD_DSPL_MINITASKPORTDISP 0x096c0310
+~~~
+
+#### Local数据区添加字段
+
+`src/bfd/src/gfd/services/bfd_bas_struct.h`
+
+~~~c
+/* DamMiniGroup DAM类中的字段 */
+typedef struct tagDamMiniGroup {
+    VRID vrId;       /* VR ID */
+    UINT32 groupId;    /* groupId */
+} DAMMINIGROUP;
+ 
+/* DamMiniPort DAM类中的字段 */
+typedef struct tagDamMiniPort {
+    VRID vrId;          /* VR ID */
+    UINT32 groupId;     /* groupId */
+    UINT32 ifIndex;     /* ifIndex */
+    UCHAR ifPriority;  /* ifPriority */
+} DAMMINIPORT;
+
+...
+
+typedef struct tagBfdLocal {
+	
+	...
+	
+	BFD_BOOL groupVisited[8];       //用于记录groupView对应位置是否有数据
+    BFD_BOOL portVisited[16];        //用于记录memView对应位置是否有数据
+    DAMMINIGROUP groupView[8];     //MINITASK:用来存放CLASS_BFD_DAMMINIGROUP_S的数据
+    DAMMINIPORT portView[16];        //MINITASK:用于存放CLASS_BFD_DAMMINIPORT_S的数据
+} BFD_LOCAL_S, GFD_LOCAL_S;
+~~~
+
+#### DAM类下发
+
+`src/bfd/src/gfd/services/glbcfg/bfd_glbcfg_lrvr.c`
+
+~~~c
+BFD_RETURN_CODE_E BFD_CMF_CreateMiniTaskGrpCfg(VOID *recData, VOID * const pThis)
+{
+ 
+    BFD_RETURN_CODE_E enRtnCode = BFD_RTCODE_OK;
+    
+    CLASS_BFD_DAMMINIGROUP_S *pstRecData = (CLASS_BFD_DAMMINIGROUP_S *)recData;
+    BFD_LOCAL_S *bfdLocal = (BFD_LOCAL_S *)pThis;
+    //先查询，若是存在直接返回
+    for (int i = 0; i < 8; i++) {
+        if (bfdLocal->groupVisited[i]) {
+            if (bfdLocal->groupView[i].groupId == pstRecData->groupId) {
+                return enRtnCode;
+            }
+        }
+    }
+    //若是没有则插入
+    for (int i = 0; i < 8; i++) {
+        if (!(bfdLocal->groupVisited[i])) {
+            bfdLocal->groupView[i].vrId = pstRecData->vrId;
+            bfdLocal->groupView[i].groupId = pstRecData->groupId;
+            bfdLocal->groupVisited[i] = BFD_TRUE;
+            break;
+        }
+    }
+    BFD_DEBUG_STR(BFD_DBG_PROC, "minitaskgroup insert successfully");
+    return enRtnCode;
+}
+BFD_RETURN_CODE_E BFD_CMF_DelMiniTaskGrpCfg(VOID *recData, VOID * const pThis)
+{
+    CLASS_BFD_DAMMINIGROUP_S *pstRecData = (CLASS_BFD_DAMMINIGROUP_S *)recData;
+    BFD_LOCAL_S *bfdLocal = (BFD_LOCAL_S *)pThis;
+    //若是查询到则删除
+    for (int i = 0; i < 8; i++) {
+        if (bfdLocal->groupVisited[i]) {
+            if (bfdLocal->groupView[i].groupId == pstRecData->groupId) {
+                bfdLocal->groupVisited[i] = BFD_FALSE;
+                return BFD_RTCODE_OK;
+            }
+        }
+    }
+    BFD_DEBUG_STR(BFD_DBG_PROC, "minitaskgroup delete error");
+    return BFD_RTCODE_ERR;
+}
+ 
+BFD_RETURN_CODE_E BFD_CMF_CreateMiniTaskPortCfg(VOID *recData, VOID * const pThis)
+{
+    BFD_RETURN_CODE_E enRtnCode = BFD_RTCODE_OK;
+    
+    CLASS_BFD_DAMMINIPORT_S *pstRecData = (CLASS_BFD_DAMMINIPORT_S *)recData;
+    BFD_LOCAL_S *bfdLocal = (BFD_LOCAL_S *)pThis;
+    //先查询,若是存在直接返回
+    for (int i = 0; i < 16; i++) {
+        if (bfdLocal->portVisited[i]) {
+            if (bfdLocal->portView[i].groupId == pstRecData->groupId && bfdLocal->portView[i].ifIndex == pstRecData->ifIndex) {
+                return enRtnCode;
+            }
+        }
+    }
+    //若是没有则插入
+    for (int i = 0; i < 16; i++) {
+        if (!(bfdLocal->portVisited[i])) {
+            bfdLocal->portView[i].vrId = pstRecData->vrId;
+            bfdLocal->portView[i].groupId = pstRecData->groupId;
+            bfdLocal->portView[i].ifIndex = pstRecData->ifIndex;
+            bfdLocal->portView[i].ifPriority = pstRecData->ifPriority;
+            bfdLocal->portVisited[i] = BFD_TRUE;
+            break;
+        }
+    }
+    BFD_DEBUG_STR(BFD_DBG_PROC, "minitaskmem insert successfully");
+    return enRtnCode;
+}
+ 
+ 
+BFD_RETURN_CODE_E BFD_CMF_DelMiniTaskPortCfg(VOID *recData, VOID * const pThis)
+{
+    CLASS_BFD_DAMMINIPORT_S *pstRecData = (CLASS_BFD_DAMMINIPORT_S *)recData;
+    BFD_LOCAL_S *bfdLocal = (BFD_LOCAL_S *)pThis;
+    //若是查询到则删除
+    for (int i = 0; i < 16; i++) {
+        if (bfdLocal->portVisited[i]) {
+            if (bfdLocal->portView[i].groupId == pstRecData->groupId && bfdLocal->portView[i].ifIndex == pstRecData->ifIndex) {
+                bfdLocal->portVisited[i] = BFD_FALSE;
+                return BFD_RTCODE_OK;
+            }
+        }
+    }
+    BFD_DEBUG_STR(BFD_DBG_PROC, "minitaskmem delete error");
+    return BFD_RTCODE_ERR;
+}
+
+// MINITASK TODO
+BFD_RETURN_CODE_E BFD_GLBCFG_MiniTaskGrpCfg(VOID *pThis)
+{
+    BfdSmpCfgRegInfo regInfo = { VOS_NULL };
+    regInfo.opCreate = BFD_CMF_CreateMiniTaskGrpCfg;
+    regInfo.opSet = BFD_CMF_CreateMiniTaskGrpCfg;
+    regInfo.opDelete = BFD_CMF_DelMiniTaskGrpCfg;
+    return BFD_SMP_RegCfgMsgProc(CLASSID_DAMVIEW_DAMMINIGROUP, &regInfo, pThis);
+}
+ 
+BFD_RETURN_CODE_E BFD_GLBCFG_MiniTaskMemCfg(VOID *pThis)
+{
+    BfdSmpCfgRegInfo regInfo = { VOS_NULL };
+    regInfo.opCreate = BFD_CMF_CreateMiniTaskPortCfg;
+    regInfo.opSet = BFD_CMF_CreateMiniTaskPortCfg;
+    regInfo.opDelete = BFD_CMF_DelMiniTaskPortCfg;
+    return BFD_SMP_RegCfgMsgProc(CLASSID_DAMVIEW_DAMMINIPORT, &regInfo, pThis);
+}
+ 
+VOID BFD_GLBCFG_MiniTaskCfg(VOID *pThis)
+{
+    BFD_RETURN_CODE_E retCode = BFD_GLBCFG_MiniTaskGrpCfg(pThis);
+    retCode += BFD_GLBCFG_MiniTaskMemCfg(pThis);
+    VRP_ASSERT(retCode == BFD_RTCODE_OK);
+    return;
+}
+~~~
+
+`src/bfd/src/gfd/services/glbcfg/bfd_glbcfg_lrvr.h`
+
+~~~c
+VOID BFD_GLBCFG_MiniTaskCfg(VOID *pThis);
+~~~
+
+`src/bfd/src/gfd/services/glbcfg/bfd_glbcfg_init.c`在VOID BFD_GLBCFG_Init(VOID *pThis)函数内：
+
+~~~c
+BFD_GLBCFG_MiniTaskCfg(pThis);
+~~~
+
+#### 动态类查询
+
+`src/bfd/src/gfd/services/equery/bfd_equery_cli.c`
+
+~~~c
+typedef VOID (*BFD_EQUERY_GetDispCondForMiniFunc)(BFD_DISP_MINI_S *dispCond, VOID *fieldValue, VOID * const pThis);
+typedef struct tagBfdGetDispCondForMiniMap {
+    UINT32 fieldID;
+    BFD_EQUERY_GetDispCondForMiniFunc getDispCondFunc;
+} BfdGetDispCondForMiniMap;
+ 
+/* groupId转换函数 */
+VOID BFD_EQUERY_GetMiniDisplayCondGroupId(BFD_DISP_MINI_S *dispCond, VOID *fieldValue, VOID * const pThis)
+{
+    //将资源侧传过来的groupId转化为查询条件
+    dispCond->groupId = *(UINT32 *)fieldValue;
+    return;
+}
+ 
+/* Minitask中group的查询条件转化表 */
+VOID BFD_EQUERY_GetMiniGrpDisplayCond(UCHAR fieldID, VOID *fieldValue, BFD_DISP_MINI_S *dispCond, VOID * const pThis)
+{
+    //注册表
+    BfdGetDispCondForMiniMap getDispCondFuncMaps[] = {
+        { FID_BFD_DYNMINIGROUP_GROUPID, BFD_EQUERY_GetMiniDisplayCondGroupId },
+    };
+ 
+    UINT32 i;
+    UINT32 arrayCnt = sizeof(getDispCondFuncMaps) / sizeof(getDispCondFuncMaps[0]);
+    BFD_EQUERY_GetDispCondForMiniFunc getDispCondFunc = VOS_NULL;
+    for (i = 0; i < arrayCnt; i++) {
+        if (getDispCondFuncMaps[i].fieldID == fieldID) {
+            getDispCondFunc = getDispCondFuncMaps[i].getDispCondFunc;
+        }
+    }
+ 
+    if (getDispCondFunc != VOS_NULL) {
+        getDispCondFunc(dispCond, fieldValue, pThis);
+    } else {
+        BFD_DEBUG_STR(BFD_DBG_ERR, "GetDisplayVerSessCond: err cond(ID=%u,Val=%u).", fieldID, *(UINT32 *)fieldValue);
+    }
+ 
+    return;
+}
+ 
+/* 抽取display minitask group 显示条件 */
+BFD_RETURN_CODE_E BFD_EQUERY_GetDisplayMinitaskGrpCond(VOID *atom, UCHAR condNum, VOID *conds, VOID *pThis)
+{
+    BFD_DISP_MINI_S *dispCond = (BFD_DISP_MINI_S *)conds;
+    VOID *fieldValue = VOS_NULL;
+    TLV_APPCFGI_TBL_FLD_COND_ITEM_S *condItem = VOS_NULL;
+    UCHAR loop;
+    /* 循环抽取查询条件 */
+    for (loop = 0; loop < condNum; ++loop) {
+        /* 抽取查询条件和相应数据 */
+        UINT32 retCode = CMF_GetTblFldCond(atom, loop, &condItem, &fieldValue);
+        if (retCode != VOS_OK) {
+            BFD_DEBUG_STR(BFD_DBG_ERR, "Failed to get condition(ret=%u).", retCode);
+            return BFD_RTCODE_MSG_PARA_ERR;
+        }
+        BFD_EQUERY_GetMiniGrpDisplayCond(condItem->ucFieldID, fieldValue, dispCond, pThis);
+    }
+    return BFD_RTCODE_OK;
+}
+ 
+/* 根据显示条件和搜索树,显示display minitask group 命令的内容, */
+BFD_RETURN_CODE_E BFD_EQUERY_FillBatchSessMiniInfo(BfdSmpEchoInfo *info, VOID **rspMsg, VOID *pThis)
+{
+    BFD_DEBUG_STR(BFD_DBG_ERR, "BFD_EQUERY_FillBatchSessMiniInfo begin");
+    BFD_DISP_MINI_S *dispCond = (BFD_DISP_MINI_S *)(info->conditions);
+    UINT32 len = sizeof(CLASS_BFD_DYNMINIGROUP_S);
+    CLASS_BFD_DYNMINIGROUP_S ssnView;
+    (VOID)memset_s((VOS_VOID *)(&ssnView), len, 0, len);
+    BFD_LOCAL_S *bfdLocal = (BFD_LOCAL_S *)pThis;
+    //在BFD_LOCAL中查询数据
+    for (int i = 0; i < 8; i++) {
+        //当存在groupId符合的数据时，插入
+        if (bfdLocal->groupVisited[i] && (bfdLocal->groupView[i].groupId == dispCond->groupId || dispCond->groupId == 0)) {
+            ssnView.vrId = bfdLocal->groupView[i].vrId;
+            ssnView.groupId = bfdLocal->groupView[i].groupId;
+            //添加CLASS_BFD_DYNMINIGROUP_S中的其他数据
+            ssnView.groupState = 1;
+            DATETIME time;
+            (VOID)memset_s((VOS_VOID *)(&time), sizeof(DATETIME), 0, sizeof(DATETIME));
+            time.usYear=2022;
+            time.ucMonth=1;
+            time.ucDay=1;
+            time.ucHour=0;
+            time.ucMinute=0;
+            time.ucSecond=0;
+            ssnView.groupCreateTime = time;
+            /* 在回应消息中增加记录 */
+            CMF_AddRec(rspMsg, &ssnView, len, CLASSID_DIMDYN_DYNMINIGROUP);
+        }
+    }
+    BFD_DEBUG_STR(BFD_DBG_ERR, "BFD_EQUERY_FillBatchSessMiniInfo end...");
+    (VOID)CMF_SetRetCode(*rspMsg, 0, ENUM_APPCFGI_RETURN_CODE_OK);
+    return BFD_RTCODE_OK;
+}
+ 
+/* Minitask中port的查询条件转化表 */
+VOID BFD_EQUERY_GetMiniPortDisplayCond(UCHAR fieldID, VOID *fieldValue, BFD_DISP_MINI_S *dispCond, VOID * const pThis)
+{
+    //注册表
+    BfdGetDispCondForMiniMap getDispCondFuncMaps[] = {
+        { FID_BFD_DYNMINIPORT_GROUPID, BFD_EQUERY_GetMiniDisplayCondGroupId },
+    };
+ 
+    UINT32 i;
+    UINT32 arrayCnt = sizeof(getDispCondFuncMaps) / sizeof(getDispCondFuncMaps[0]);
+    BFD_EQUERY_GetDispCondForMiniFunc getDispCondFunc = VOS_NULL;
+    for (i = 0; i < arrayCnt; i++) {
+        if (getDispCondFuncMaps[i].fieldID == fieldID) {
+            getDispCondFunc = getDispCondFuncMaps[i].getDispCondFunc;
+        }
+    }
+ 
+    if (getDispCondFunc != VOS_NULL) {
+        getDispCondFunc(dispCond, fieldValue, pThis);
+    } else {
+        BFD_DEBUG_STR(BFD_DBG_ERR, "GetDisplayVerSessCond: err cond(ID=%u,Val=%u).", fieldID, *(UINT32 *)fieldValue);
+    }
+ 
+    return;
+}
+ 
+/* 获取display minitask group 中port命令的条件 */
+BFD_RETURN_CODE_E BFD_EQUERY_GetDisplayMinitaskPortCond(VOID *atom, UCHAR condNum, VOID *conds, VOID *pThis)
+{
+    BFD_DISP_MINI_S *dispCond = (BFD_DISP_MINI_S *)conds;
+    VOID *fieldValue = VOS_NULL;
+    TLV_APPCFGI_TBL_FLD_COND_ITEM_S *condItem = VOS_NULL;
+    UCHAR loop;
+    /* 循环抽取查询条件 */
+    for (loop = 0; loop < condNum; ++loop) {
+        /* 抽取查询条件和相应数据 */
+        UINT32 retCode = CMF_GetTblFldCond(atom, loop, &condItem, &fieldValue);
+        if (retCode != VOS_OK) {
+            BFD_DEBUG_STR(BFD_DBG_ERR, "Failed to get condition(ret=%u).", retCode);
+            return BFD_RTCODE_MSG_PARA_ERR;
+        }
+        BFD_EQUERY_GetMiniPortDisplayCond(condItem->ucFieldID, fieldValue, dispCond, pThis);
+    }
+    return BFD_RTCODE_OK;
+}
+ 
+/* 根据显示条件和搜索树,显示display minitask group命令中port的内容, */
+BFD_RETURN_CODE_E BFD_EQUERY_FillBatchSessMiniPortInfo(BfdSmpEchoInfo *info, VOID **rspMsg, VOID *pThis)
+{
+    BFD_DEBUG_STR(BFD_DBG_ERR, "BFD_EQUERY_FillBatchSessMiniPortInfo begin...");
+    BFD_DISP_MINI_S *dispCond = (BFD_DISP_MINI_S *)(info->conditions);
+    BFD_DEBUG_STR(BFD_DBG_ERR, "groupId = %u", dispCond->groupId);
+    UINT32 len = sizeof(CLASS_BFD_DYNMINIPORT_S);
+    CLASS_BFD_DYNMINIPORT_S ssnView;
+    (VOID)memset_s((VOS_VOID *)(&ssnView), len, 0, len);
+    BFD_LOCAL_S *bfdLocal = (BFD_LOCAL_S *)pThis;
+    //在BFD_LOCAL中查询数据
+    for (int i = 0; i < 16; i++) {
+        //当存在groupId符合的数据时，插入
+        BFD_DEBUG_STR(BFD_DBG_ERR, "Visited = %u LocalGroupId = %u", bfdLocal->portVisited[i], bfdLocal->portView[i].groupId);
+        if (bfdLocal->portVisited[i] && bfdLocal->portView[i].groupId == dispCond->groupId) {
+            ssnView.vrId = bfdLocal->portView[i].vrId;
+            ssnView.groupId = bfdLocal->portView[i].groupId;
+            ssnView.ifIndex = bfdLocal->portView[i].ifIndex;
+            //添加CLASS_BFD_DYNMINIMEM_S中的其他数据
+            DATETIME time;
+            (VOID)memset_s((VOS_VOID *)(&time), sizeof(DATETIME), 0, sizeof(DATETIME));
+            time.usYear=2022;
+            time.ucMonth=1;
+            time.ucDay=1;
+            time.ucHour=0;
+            time.ucMinute=0;
+            time.ucSecond=0;
+            ssnView.ifCreateTime = time;
+            ssnView.ifState = 1;
+            /* 在回应消息中增加记录 */
+            CMF_AddRec(rspMsg, &ssnView, len, CLASSID_DIMDYN_DYNMINIPORT);
+        }
+    }
+    BFD_DEBUG_STR(BFD_DBG_ERR, "BFD_EQUERY_FillBatchSessMiniPortInfo end...");
+    (VOID)CMF_SetRetCode(*rspMsg, 0, ENUM_APPCFGI_RETURN_CODE_OK);
+    return BFD_RTCODE_OK;
+}
+ 
+// MINITASK
+BFD_RETURN_CODE_E BFD_EQUERY_RegQueryMiniTaskGrpInfoByCli(VOID *pThis)
+{
+    BFD_DEBUG_STR(BFD_DBG_ERR, "BFD_EQUERY_RegQueryMiniTaskGrpInfoByCli in...");
+    BfdSmpQueryRegInfo regInfo = {
+        sizeof(BFD_DISP_COND_S),
+        BFD_EQUERY_GetDisplayMinitaskGrpCond,
+        BFD_EQUERY_FillBatchSessMiniInfo,
+        BFD_EQUERY_FillBatchSessMiniInfo
+    };
+    return BFD_SMP_RegQueryMsgProc(CLASSID_DIMDYN_DYNMINIGROUP, &regInfo, pThis);
+}
+ 
+BFD_RETURN_CODE_E BFD_EQUERY_RegQueryMiniTaskPortInfoByCli(VOID *pThis)
+{
+    BFD_DEBUG_STR(BFD_DBG_ERR, "BFD_EQUERY_RegQueryMiniTaskPortInfoByCli in...");
+    BfdSmpQueryRegInfo regInfo = {
+        sizeof(BFD_DISP_COND_S),
+        BFD_EQUERY_GetDisplayMinitaskPortCond,
+        BFD_EQUERY_FillBatchSessMiniPortInfo,
+        BFD_EQUERY_FillBatchSessMiniPortInfo
+    };
+    return BFD_SMP_RegQueryMsgProc(CLASSID_DIMDYN_DYNMINIPORT, &regInfo, pThis);
+}
+ 
+VOID BFD_EQUERY_RegDimdynForCli(VOID *pThis)
+{
+    BFD_RETURN_CODE_E retCode = BFD_EQUERY_RegQuerySessBriefInfoByCli(pThis);
+    retCode += BFD_EQUERY_RegQuerySessVerboseInfoByCli(pThis);
+    
+    //MINITASK
+    retCode += BFD_EQUERY_RegQueryMiniTaskGrpInfoByCli(pThis);
+    retCode += BFD_EQUERY_RegQueryMiniTaskPortInfoByCli(pThis);
+    VRP_ASSERT(retCode == BFD_RTCODE_OK);
+    return;
+}
+~~~
+
+`src/bfd/src/gfd/services/equery/bfd_equery.h`
+
+~~~c
+/* display minitask group 中的显示条件和相关参数*/
+typedef struct tagBFD_DISP_MINI_S {
+    UINT32 groupId;     //命令行中输入的要查询的groupId
+} BFD_DISP_MINI_S;
+~~~
+
